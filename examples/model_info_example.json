@@ -1,0 +1,12 @@
+{
+  "model_name": "MobileNetV2",
+  "framework": "TensorFlow",
+  "input_shape": [224, 224, 3],
+  "output_shape": [1000],
+  "total_parameters": 3500000,
+  "layers": 154,
+  "size_mb": 14.2,
+  "architecture": "CNN",
+  "use_cases": ["image_classification", "object_detection"],
+  "accuracy_baseline": 0.718
+}
