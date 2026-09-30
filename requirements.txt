@@ -1,0 +1,8 @@
+anthropic==0.28.0
+python-dotenv==1.0.0
+pydantic==2.5.0
+click==8.1.7
+tensorflow==2.13.0
+torch==2.0.0
+onnx==1.15.0
+numpy==1.24.3
