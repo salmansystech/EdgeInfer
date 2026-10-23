@@ -1,5 +1,7 @@
 # EdgeInfer - AI Model Deployment for Edge Devices
 
+[![CI](https://github.com/salmansystech/EdgeInfer/actions/workflows/ci.yml/badge.svg)](https://github.com/salmansystech/EdgeInfer/actions/workflows/ci.yml)
+
 An **LLM-powered assistant** for deploying machine learning models to resource-constrained embedded devices. Describe your model and pick a microcontroller, and EdgeInfer produces a feasibility analysis, an optimization plan, and C/C++ inference code for TensorFlow Lite Micro.
 
 Use it from the **command line** or through a **React web UI**, with either **Claude** (Anthropic) or any **Ollama** model (local or Ollama Cloud) as the language model.
@@ -205,7 +207,7 @@ pip install -r requirements-dev.txt
 python -m pytest
 ```
 
-The tests cover the performance estimator, the Claude and Ollama provider layer, and every API endpoint. LLM calls are mocked, so no API key or network access is needed.
+The tests cover the performance estimator, the Claude and Ollama provider layer, and every API endpoint. LLM calls are mocked, so no API key or network access is needed. GitHub Actions runs the tests (Python 3.10 and 3.13) and the frontend build on every push.
 
 ## ⚠️ Current Limitations
 
@@ -220,7 +222,6 @@ EdgeInfer is a working prototype. Please keep in mind:
 
 - [ ] Parse `.tflite` and `.onnx` files for real parameter counts, layers and shapes
 - [ ] Device-aware latency estimates based on clock speed and model FLOPs
-- [ ] Continuous integration (run tests on every push)
 - [ ] Render Markdown output in the UI
 - [ ] Follow-up questions in the web UI
 - [ ] Authentication and rate limiting for hosted deployments
