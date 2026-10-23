@@ -19,6 +19,8 @@ htmlcov/
 *.pt
 *.pth
 *.onnx
+!examples/sample-models/*.tflite
+!examples/sample-models/*.onnx
 models/
 output/
 *.o

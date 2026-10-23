@@ -14,6 +14,8 @@ setup(
         "click>=8.1.7",
         "flask>=3.0.0",
         "flask-cors>=4.0.0",
+        "onnx>=1.16.0",
+        "tflite>=2.10.0",
     ],
     entry_points={
         "console_scripts": [

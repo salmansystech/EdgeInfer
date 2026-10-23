@@ -17,9 +17,6 @@ class Config:
     OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "gemma4:31b")
     OLLAMA_API_KEY = os.getenv("OLLAMA_API_KEY")  # only needed for Ollama Cloud
     
-    # Supported model formats
-    SUPPORTED_FORMATS = ["pb", "tflite", "onnx", "pt", "pth", "h5"]
-    
     # Target hardware specifications
     HARDWARE_TARGETS: Dict = {
         "arm_cortex_m4": {
@@ -103,6 +100,6 @@ class Config:
     }
     
     # Analysis settings
-    MAX_MODEL_SIZE = 500_000_000  # 500MB
+    MAX_MODEL_SIZE = 200 * 1024 * 1024  # 200 MB upload limit
     TIMEOUT = 300  # seconds
     TEMP_DIR = "temp_models"
