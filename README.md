@@ -2,11 +2,16 @@
 
 [![CI](https://github.com/salmansystech/EdgeInfer/actions/workflows/ci.yml/badge.svg)](https://github.com/salmansystech/EdgeInfer/actions/workflows/ci.yml)
 
-An **LLM-powered assistant** for deploying machine learning models to resource-constrained embedded devices. Describe your model and pick a microcontroller, and EdgeInfer produces a feasibility analysis, an optimization plan, and C/C++ inference code for TensorFlow Lite Micro.
+An **LLM-powered assistant** for deploying machine learning models to resource-constrained embedded devices. Upload a `.tflite` or `.onnx` model and pick a microcontroller, and EdgeInfer reads the model's architecture, then produces a feasibility analysis, an optimization plan, and C/C++ inference code for TensorFlow Lite Micro.
 
 Use it from the **command line** or through a **React web UI**, with either **Claude** (Anthropic) or any **Ollama** model (local or Ollama Cloud) as the language model.
 
 ## 🎯 Features
+
+### 📦 Model Parsing
+- Reads **TensorFlow Lite** (`.tflite`) and **ONNX** (`.onnx`) files
+- Extracts parameter count, layers, operator types, input/output shapes and weight precision (e.g. FLOAT32 or INT8)
+- These real details are passed to every analysis, plan and code generation step
 
 ### 🔍 Model Analysis
 - Feasibility assessment against the target device's RAM, Flash and CPU
@@ -28,6 +33,7 @@ Use it from the **command line** or through a **React web UI**, with either **Cl
 ### 📊 Performance Estimator
 - Quick, rule-based estimates of optimized size, latency, power and accuracy retention
 - Checks whether the optimized model fits in the device's Flash
+- Recognizes models that are already INT8-quantized
 - Runs locally with no API call
 
 ## 🏆 Supported Platforms
@@ -95,19 +101,26 @@ OLLAMA_MODEL=gemma4:31b
 python main.py list-hardware
 
 # Analyze a model for a device (then ask follow-up questions; type 'exit' to quit)
-python main.py analyze --model mobilenet.tflite --hardware esp32
+python main.py analyze --model examples/sample-models/hello_world_int8.tflite --hardware esp32
 
 # Generate an optimization strategy (then refine it with feedback; type 'done' to finish)
-python main.py optimize --model mobilenet.tflite --hardware esp32 --level balanced
+python main.py optimize --model examples/sample-models/hello_world_float.tflite --hardware esp32 --level balanced
 
 # Generate inference code and save it to output/inference.md
-python main.py generate --model mobilenet.tflite --hardware esp32 --output output/
+python main.py generate --model examples/sample-models/hello_world_int8.tflite --hardware esp32 --output output/
 
 # Estimate optimized size, latency and power
-python main.py benchmark --model mobilenet.tflite --hardware esp32 --optimization quantization,pruning
+python main.py benchmark --model examples/sample-models/hello_world_float.tflite --hardware esp32 --optimization quantization,pruning
 ```
 
-`--model` must point to an existing file. See **Current Limitations** below for how it is used.
+Use your own `.tflite` or `.onnx` file, or the [sample models](examples/sample-models/) included in the repo. Each command starts by printing what it read from the model:
+
+```
+📦 hello_world_int8 (TensorFlow Lite, 2.6 KB)
+   Parameters: 321 | Layers: 3 | Precision: INT8
+   Input: (1, 1) | Output: (1, 1)
+   Operators: FULLY_CONNECTED x3
+```
 
 ### 3b. Use the web UI
 
@@ -121,7 +134,7 @@ npm install
 npm run dev
 ```
 
-Upload a model, pick a device and optimization level, then click **Analyze & Optimize**. The UI shows the estimates, the analysis and the optimization plan, and can then generate inference code. Each result can be downloaded as Markdown.
+Upload a `.tflite` or `.onnx` model (or a sample from `examples/sample-models/`) to see its parameters, layers, precision and operators. Then pick a device and optimization level and click **Analyze & Optimize**. The UI shows the estimates, the analysis and the optimization plan, and can then generate inference code. Each result can be downloaded as Markdown.
 
 ### 3c. Or run everything with Docker
 
@@ -134,6 +147,11 @@ The UI is served on `http://localhost:3000` and the API on `http://localhost:500
 ## 📊 System Architecture
 
 ```
+.tflite / .onnx file
+    ↓
+Model Parser                  (no LLM)
+└─ Parameters, layers, operators, shapes, precision
+    ↓
 Model details + target device + optimization level
     ↓
 Step 1: Model Analysis        (LLM)
@@ -162,6 +180,7 @@ All LLM calls go through [`src/llm.py`](src/llm.py), so switching between Claude
 | Method | Endpoint | Description |
 |---|---|---|
 | GET | `/api/hardware-targets` | List supported devices |
+| POST | `/api/parse-model` | Upload a `.tflite` or `.onnx` file (multipart field `file`) and get its architecture details |
 | POST | `/api/analyze` | Model analysis |
 | POST | `/api/optimize` | Optimization plan plus estimated size reduction and speed-up |
 | POST | `/api/generate-code` | Inference code based on an optimization plan |
@@ -174,6 +193,7 @@ EdgeInfer/
 ├── src/
 │   ├── config.py               # Hardware targets and settings
 │   ├── llm.py                  # Claude / Ollama provider layer
+│   ├── model_parser.py         # .tflite / .onnx model reader
 │   ├── model_analyzer.py       # Model analysis step
 │   ├── optimization_agent.py   # Optimization planning step
 │   ├── code_generator.py       # Code generation step
@@ -181,6 +201,7 @@ EdgeInfer/
 │   └── cli.py                  # Click CLI
 ├── client/                     # React + TypeScript + Vite web UI
 ├── examples/
+│   ├── sample-models/          # Small TFLite models to try
 │   ├── model_info_example.json
 │   └── deployment_guide.md
 ├── tests/                      # pytest suite
@@ -196,6 +217,7 @@ EdgeInfer/
 
 - **LLM:** Claude API (Anthropic) or Ollama (local or Ollama Cloud)
 - **Backend:** Python 3.10+, Flask, Click
+- **Model parsing:** `tflite` (FlatBuffers schema), `onnx`
 - **Frontend:** React 18, TypeScript, Vite, Tailwind CSS
 - **Deployment:** Docker, Docker Compose
 - **Generated code targets:** TensorFlow Lite Micro, ESP-NN, CMSIS-NN
@@ -207,20 +229,19 @@ pip install -r requirements-dev.txt
 python -m pytest
 ```
 
-The tests cover the performance estimator, the Claude and Ollama provider layer, and every API endpoint. LLM calls are mocked, so no API key or network access is needed. GitHub Actions runs the tests (Python 3.10 and 3.13) and the frontend build on every push.
+The tests cover the model parser, the performance estimator, the Claude and Ollama provider layer, and every API endpoint. LLM calls are mocked, so no API key or network access is needed. GitHub Actions runs the tests (Python 3.10 and 3.13) and the frontend build on every push.
 
 ## ⚠️ Current Limitations
 
 EdgeInfer is a working prototype. Please keep in mind:
 
-- **Model files are not parsed yet.** The CLI and UI use example architecture values (3.5M parameters, 154 layers, 224×224×3 input). The UI uses the uploaded file's real name and size.
+- **Only `.tflite` and `.onnx` are supported.** Convert TensorFlow/Keras or PyTorch models to one of these formats first.
 - **Performance numbers are estimates.** The benchmark uses fixed rules of thumb per technique (for example, quantization ≈ 4× smaller). It is not measured on hardware.
 - **LLM output should be reviewed.** Analyses, plans and generated code come from a language model and need checking before production use.
 - **Not hardened for public hosting.** The API has no authentication or rate limiting, so anyone who can reach it can spend your API credits.
 
 ## 🔮 Roadmap
 
-- [ ] Parse `.tflite` and `.onnx` files for real parameter counts, layers and shapes
 - [ ] Device-aware latency estimates based on clock speed and model FLOPs
 - [ ] Render Markdown output in the UI
 - [ ] Follow-up questions in the web UI
@@ -231,6 +252,7 @@ EdgeInfer is a working prototype. Please keep in mind:
 
 - [Deployment Guide](DEPLOYMENT.md)
 - [Model Deployment Walkthrough](examples/deployment_guide.md)
+- [Sample Models](examples/sample-models/)
 - [Model Information Example](examples/model_info_example.json)
 - [Web UI](client/README.md)
 

@@ -13,7 +13,8 @@ A responsive React UI for EdgeInfer's AI model deployment assistant.
 
 ## Features
 
-- 📤 Drag-and-drop model upload
+- 📤 Drag-and-drop `.tflite` / `.onnx` upload
+- 📦 Model summary: parameters, layers, precision, shapes and operators
 - 🎯 Interactive hardware selection
 - ⚙️ Optimization level configuration (conservative, balanced, aggressive)
 - 📊 Estimated size, latency, power and accuracy after optimization
@@ -69,6 +70,7 @@ client/
 
 - **Header** - Branding
 - **ModelUpload** - File upload with drag & drop
+- **ModelSummary** - Architecture details read from the uploaded model
 - **HardwareSelector** - Device selection with RAM, Flash and CPU specs
 - **OptimizationSelector** - Optimization level chooser
 - **ResultsDisplay** - Estimated performance metrics and deployment status
@@ -79,6 +81,7 @@ client/
 All requests go to `/api` (or `VITE_API_URL` if set):
 
 - `GET /hardware-targets` - Available hardware
+- `POST /parse-model` - Read an uploaded model file
 - `POST /analyze` - Model analysis
 - `POST /optimize` - Optimization strategy
 - `POST /generate-code` - Inference code
