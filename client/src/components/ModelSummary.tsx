@@ -15,6 +15,7 @@ const formatSize = (sizeMb: number) =>
 export const ModelSummary: React.FC<ModelSummaryProps> = ({ model }) => {
   const stats = [
     { label: 'Parameters', value: model.totalParams.toLocaleString() },
+    { label: 'MACs', value: model.macs.toLocaleString() },
     { label: 'Layers', value: model.layers.toString() },
     { label: 'Precision', value: model.precision },
     { label: 'File Size', value: formatSize(model.sizeMb) },
@@ -29,7 +30,7 @@ export const ModelSummary: React.FC<ModelSummaryProps> = ({ model }) => {
       </h2>
       <p className="text-gray-600 mb-4">{model.framework} model</p>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4 mb-4">
         {stats.map((stat) => (
           <div key={stat.label} className="bg-gray-50 rounded-lg p-3">
             <p className="text-xs text-gray-500">{stat.label}</p>

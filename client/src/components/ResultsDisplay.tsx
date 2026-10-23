@@ -2,6 +2,10 @@ import React from 'react';
 import { CheckCircle, TrendingDown, Zap } from 'lucide-react';
 import { BenchmarkResult } from '../types';
 
+// Show very fast inferences in microseconds rather than "0.0 ms"
+const formatLatency = (ms: number) =>
+  ms < 1 ? { value: (ms * 1000).toFixed(0), unit: 'microseconds' } : { value: ms.toFixed(1), unit: 'milliseconds' };
+
 interface ResultsDisplayProps {
   results: BenchmarkResult | null;
   loading: boolean;
@@ -22,6 +26,8 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results, loading
   if (!results) {
     return null;
   }
+
+  const latency = formatLatency(results.estimatedLatencyMs);
 
   return (
     <div className="card">
@@ -47,8 +53,8 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results, loading
         <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-6 rounded-lg">
           <p className="text-gray-600 font-semibold mb-2">Inference Latency</p>
           <div>
-            <p className="text-3xl font-bold">{results.estimatedLatencyMs.toFixed(1)}</p>
-            <p className="text-sm text-gray-500">milliseconds</p>
+            <p className="text-3xl font-bold">{latency.value}</p>
+            <p className="text-sm text-gray-500">{latency.unit} (estimated)</p>
           </div>
         </div>
 
@@ -56,7 +62,8 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results, loading
           <p className="text-gray-600 font-semibold mb-2">Power Consumption</p>
           <div>
             <p className="text-3xl font-bold">{results.estimatedPowerMw.toFixed(1)}</p>
-            <p className="text-sm text-gray-500">milliwatts (estimated)</p>
+            <p className="text-sm text-gray-500">milliwatts while running</p>
+            <p className="text-sm text-gray-600 mt-1">{results.energyPerInferenceMj.toPrecision(3)} mJ per inference</p>
           </div>
         </div>
 

@@ -3,6 +3,7 @@ export interface ModelInfo {
   type: string;
   framework: string;
   totalParams: number;
+  macs: number;
   layers: number;
   sizeMb: number;
   inputShape: number[];
@@ -40,6 +41,7 @@ export interface BenchmarkResult {
   sizeReductionPercent: number;
   estimatedLatencyMs: number;
   estimatedPowerMw: number;
+  energyPerInferenceMj: number;
   accuracyPreservation: number;
   memoryAvailable: boolean;
   deploymentReady: boolean;
