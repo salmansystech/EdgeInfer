@@ -1,13 +1,13 @@
 # EdgeInfer UI - React Frontend
 
-A modern, responsive React UI for EdgeInfer's AI model deployment system.
+A responsive React UI for EdgeInfer's AI model deployment assistant.
 
 ## Tech Stack
 
 - **React 18** - UI framework
 - **TypeScript** - Type safety
 - **Tailwind CSS** - Styling
-- **Vite** - Build tool
+- **Vite** - Dev server and build tool
 - **Lucide React** - Icons
 - **Axios** - HTTP client
 
@@ -15,34 +15,35 @@ A modern, responsive React UI for EdgeInfer's AI model deployment system.
 
 - 📤 Drag-and-drop model upload
 - 🎯 Interactive hardware selection
-- ⚙️ Optimization level configuration
-- 📊 Real-time analysis display
-- 📈 Performance metrics visualization
-- 💾 Code and report download
-- 🌐 Responsive design
-- 🎨 Modern UI components
+- ⚙️ Optimization level configuration (conservative, balanced, aggressive)
+- 📊 Estimated size, latency, power and accuracy after optimization
+- 🔍 Model analysis and optimization plan from the LLM
+- 💻 On-demand C/C++ inference code generation
+- 💾 Download each result as Markdown
+- ⚠️ Clear error messages when the backend or LLM call fails
 
 ## Getting Started
 
-### Installation
+The UI needs the Flask backend running. From the project root:
 
 ```bash
-cd client
+python server.py   # http://localhost:5000
+```
+
+Then, in this folder:
+
+```bash
 npm install
+npm run dev        # http://localhost:3000
 ```
 
-### Development
-
-```bash
-npm run dev
-```
-
-Runs on `http://localhost:3000`
+In development, Vite proxies `/api` requests to `http://localhost:5000`, so no extra configuration is needed.
 
 ### Building
 
 ```bash
-npm run build
+npm run build      # type-checks with tsc, then builds to dist/
+npm run preview    # serves the build on http://localhost:3000
 ```
 
 ## Project Structure
@@ -51,60 +52,51 @@ npm run build
 client/
 ├── src/
 │   ├── components/     # React components
-│   ├── pages/          # Page components
-│   ├── services/       # API services
+│   ├── services/       # API client (api.ts)
 │   ├── types/          # TypeScript types
-│   ├── styles/         # CSS files
-│   ├── App.tsx         # Main app component
-│   └── main.tsx        # Entry point
+│   ├── styles/         # Tailwind CSS
+│   ├── App.tsx         # Main app component and workflow
+│   ├── main.tsx        # Entry point
+│   └── vite-env.d.ts   # Vite environment variable types
 ├── index.html
 ├── package.json
 ├── tailwind.config.js
-├── vite.config.ts
+├── vite.config.ts      # Dev/preview server and /api proxy
 └── tsconfig.json
 ```
 
 ## Components
 
-- **Header** - Navigation and branding
+- **Header** - Branding
 - **ModelUpload** - File upload with drag & drop
-- **HardwareSelector** - Interactive hardware selection
+- **HardwareSelector** - Device selection with RAM, Flash and CPU specs
 - **OptimizationSelector** - Optimization level chooser
-- **ResultsDisplay** - Performance metrics visualization
+- **ResultsDisplay** - Estimated performance metrics and deployment status
+- **AgentOutput** - LLM output panel (analysis, plan, code) with loading state and download
 
 ## API Integration
 
-Connects to Flask backend at `http://localhost:5000/api`
+All requests go to `/api` (or `VITE_API_URL` if set):
 
-Endpoints:
-- `GET /hardware-targets` - Get available hardware
-- `POST /analyze` - Analyze model
-- `POST /optimize` - Generate optimization strategy
-- `POST /generate-code` - Generate inference code
-- `POST /benchmark` - Benchmark performance
-
-## Deployment
-
-### Vercel (Recommended)
-
-```bash
-npm install -g vercel
-vercel
-```
-
-### Docker
-
-```bash
-docker build -t edgeinfer-ui .
-docker run -p 3000:3000 edgeinfer-ui
-```
+- `GET /hardware-targets` - Available hardware
+- `POST /analyze` - Model analysis
+- `POST /optimize` - Optimization strategy
+- `POST /generate-code` - Inference code
+- `POST /benchmark` - Performance estimate
 
 ## Environment Variables
 
-Create `.env.local`:
+| Variable | Where | Purpose |
+|---|---|---|
+| `VITE_API_URL` | `.env.local` | Call the API at a different URL instead of `/api` (e.g. `http://localhost:5000/api`). Applied at build time. |
+| `API_PROXY_TARGET` | shell / Docker | Where the dev and preview servers forward `/api` (default `http://localhost:5000`). |
 
-```
-REACT_APP_API_URL=http://localhost:5000/api
+## Docker
+
+The easiest way is Docker Compose from the project root, which runs the backend and UI together:
+
+```bash
+docker compose up --build
 ```
 
 ## Contributing

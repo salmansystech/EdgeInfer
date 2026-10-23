@@ -1,208 +1,228 @@
 # EdgeInfer - AI Model Deployment for Edge Devices
 
-An **intelligent multi-agent system** that automates machine learning model deployment to resource-constrained embedded devices. Deploy your AI to microcontrollers with automatic optimization and code generation.
+An **LLM-powered assistant** for deploying machine learning models to resource-constrained embedded devices. Describe your model and pick a microcontroller, and EdgeInfer produces a feasibility analysis, an optimization plan, and C/C++ inference code for TensorFlow Lite Micro.
+
+Use it from the **command line** or through a **React web UI**, with either **Claude** (Anthropic) or any **Ollama** model (local or Ollama Cloud) as the language model.
 
 ## 🎯 Features
 
-### 🔍 **Model Analysis Agent**
-- Comprehensive neural network evaluation
-- Memory footprint and latency estimation
-- Hardware compatibility assessment
-- Optimization opportunity identification
-- Performance baseline calculation
+### 🔍 Model Analysis
+- Feasibility assessment against the target device's RAM, Flash and CPU
+- Memory, latency and power considerations
+- Optimization opportunities ranked by impact
+- Interactive follow-up questions (CLI)
 
-### ⚡ **Optimization Agent**
-- Automatic model compression strategies
-- Quantization (FP32 → INT8/INT16)
-- Pruning (magnitude-based, structured)
-- Knowledge distillation
-- Hardware-specific optimization recommendations
+### ⚡ Optimization Planning
+- Conservative, balanced or aggressive strategies
+- Quantization (FP32 → INT8/INT16), pruning, layer fusion and distillation recommendations
+- Trade-off analysis between accuracy, size and latency
+- Iterative refinement with your feedback (CLI)
 
-### 💻 **Code Generation Agent**
-- Production-ready C/C++ code generation
-- TensorFlow Lite Micro integration
-- Hardware-specific optimizations
-- SIMD instruction utilization
-- Memory-efficient data structures
+### 💻 Code Generation
+- C/C++ inference code for TensorFlow Lite Micro
+- Hardware-specific notes (e.g. ESP-NN on ESP32, CMSIS-NN on Cortex-M)
+- Memory management, error handling and integration guidance
 
-### 📊 **Benchmarking System**
-- Performance prediction on target hardware
-- Latency and power consumption estimates
-- Accuracy preservation verification
-- Deployment readiness assessment
+### 📊 Performance Estimator
+- Quick, rule-based estimates of optimized size, latency, power and accuracy retention
+- Checks whether the optimized model fits in the device's Flash
+- Runs locally with no API call
 
 ## 🏆 Supported Platforms
 
-| Device | RAM | Flash | Performance |
+| Device | RAM | Flash | CPU |
 |---|---|---|---|
-| ESP32 | 520 KB | 4 MB | ⭐⭐⭐⭐ |
-| ESP32-S3 | 512 KB | 8 MB | ⭐⭐⭐⭐⭐ |
-| ARM Cortex-M4 | 256 KB | 1 MB | ⭐⭐⭐ |
-| ARM Cortex-M7 | 512 KB | 2 MB | ⭐⭐⭐⭐ |
-| Raspberry Pi Pico | 264 KB | 2 MB | ⭐⭐⭐ |
-| Arduino Nano 33 | 256 KB | 1 MB | ⭐⭐ |
-| nRF52840 | 256 KB | 1 MB | ⭐⭐⭐ |
+| ESP32 | 520 KB | 4 MB | 240 MHz |
+| ESP32-S3 | 512 KB | 8 MB | 240 MHz |
+| ARM Cortex-M4 (STM32L4) | 256 KB | 1 MB | 168 MHz |
+| ARM Cortex-M7 (STM32H7) | 512 KB | 2 MB | 216 MHz |
+| Raspberry Pi Pico (RP2040) | 264 KB | 2 MB | 125 MHz |
+| Arduino Nano 33 | 256 KB | 1 MB | 64 MHz |
+| nRF52840 | 256 KB | 1 MB | 64 MHz |
+
+Hardware targets are defined in [`src/config.py`](src/config.py) and are easy to extend.
 
 ## 🚀 Quick Start
 
-### Installation
+### 1. Install
+
+Requires Python 3.10+ (and Node.js 18+ for the web UI).
 
 ```bash
-# Clone repository
 git clone https://github.com/salmansystech/EdgeInfer.git
 cd EdgeInfer
 
-# Create virtual environment
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies
 pip install -r requirements.txt
 
-# Configure API
 cp .env.example .env
-# Edit .env and add your ANTHROPIC_API_KEY
 ```
 
-### Usage
+### 2. Choose a language model
 
-**Analyze Model:**
-```bash
-python main.py analyze --model mobilenet.pb --hardware esp32
+Edit `.env` and pick one provider:
+
+**Claude (Anthropic)**
+```env
+LLM_PROVIDER=anthropic
+ANTHROPIC_API_KEY=your_api_key_here
+MODEL=claude-opus-5-5
+EFFORT=medium
 ```
 
-**Generate Optimization Strategy:**
-```bash
-python main.py optimize --model mobilenet.pb --hardware esp32 --level balanced
+**Ollama Cloud**
+```env
+LLM_PROVIDER=ollama
+OLLAMA_BASE_URL=https://ollama.com
+OLLAMA_MODEL=gemma4:31b
+OLLAMA_API_KEY=your_ollama_key_here
 ```
 
-**Generate Inference Code:**
-```bash
-python main.py generate --model mobilenet.pb --hardware esp32 --output output/
+**Local Ollama** (no key needed)
+```env
+LLM_PROVIDER=ollama
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=gemma4:31b
 ```
 
-**Benchmark Performance:**
-```bash
-python main.py benchmark --model mobilenet.pb --hardware esp32
-```
+### 3a. Use the CLI
 
-**List Supported Hardware:**
 ```bash
+# List supported hardware
 python main.py list-hardware
+
+# Analyze a model for a device (then ask follow-up questions; type 'exit' to quit)
+python main.py analyze --model mobilenet.tflite --hardware esp32
+
+# Generate an optimization strategy (then refine it with feedback; type 'done' to finish)
+python main.py optimize --model mobilenet.tflite --hardware esp32 --level balanced
+
+# Generate inference code and save it to output/inference.md
+python main.py generate --model mobilenet.tflite --hardware esp32 --output output/
+
+# Estimate optimized size, latency and power
+python main.py benchmark --model mobilenet.tflite --hardware esp32 --optimization quantization,pruning
 ```
+
+`--model` must point to an existing file. See **Current Limitations** below for how it is used.
+
+### 3b. Use the web UI
+
+```bash
+# Terminal 1 - backend API on http://localhost:5000
+python server.py
+
+# Terminal 2 - UI on http://localhost:3000
+cd client
+npm install
+npm run dev
+```
+
+Upload a model, pick a device and optimization level, then click **Analyze & Optimize**. The UI shows the estimates, the analysis and the optimization plan, and can then generate inference code. Each result can be downloaded as Markdown.
+
+### 3c. Or run everything with Docker
+
+```bash
+docker compose up --build
+```
+
+The UI is served on `http://localhost:3000` and the API on `http://localhost:5000`. Settings are read from `.env`.
 
 ## 📊 System Architecture
 
 ```
-Input: ML Model (TensorFlow, PyTorch, ONNX)
+Model details + target device + optimization level
     ↓
-Agent 1: Model Analysis
-├─ Architecture extraction
-├─ Memory calculation
-├─ Latency estimation
-└─ Hardware compatibility
+Step 1: Model Analysis        (LLM)
+├─ Feasibility vs. RAM / Flash / CPU
+├─ Memory and latency considerations
+└─ Ranked optimization opportunities
     ↓
-Agent 2: Optimization
-├─ Quantization strategy
-├─ Pruning recommendations
-├─ Layer fusion
-└─ Trade-off analysis
+Step 2: Optimization Plan     (LLM)
+├─ Quantization / pruning / fusion strategy
+├─ Trade-off analysis
+└─ Expected size, latency and accuracy
     ↓
-Agent 3: Code Generation
-├─ C/C++ inference engine
-├─ Hardware optimization
-├─ Memory management
-└─ Integration examples
-    ↓
-Output: Complete Deployment Package
-├─ Optimized model
-├─ Production C/C++ code
-├─ Performance benchmarks
-├─ Integration guide
-└─ Deployment checklist
+Step 3: Code Generation       (LLM, uses the plan from step 2)
+├─ TensorFlow Lite Micro inference code
+├─ Hardware-specific optimizations
+└─ Integration and deployment notes
+
+Performance Estimator         (rule-based, no LLM)
+└─ Size, latency, power and fit-in-Flash estimates
 ```
+
+All LLM calls go through [`src/llm.py`](src/llm.py), so switching between Claude and Ollama is a single setting.
+
+### REST API
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/hardware-targets` | List supported devices |
+| POST | `/api/analyze` | Model analysis |
+| POST | `/api/optimize` | Optimization plan plus estimated size reduction and speed-up |
+| POST | `/api/generate-code` | Inference code based on an optimization plan |
+| POST | `/api/benchmark` | Rule-based performance estimate |
 
 ## 📁 Project Structure
 
 ```
 EdgeInfer/
 ├── src/
-│   ├── config.py                 # Hardware & settings
-│   ├── model_analyzer.py         # Model analysis agent
-│   ├── optimization_agent.py     # Optimization strategies
-│   ├── code_generator.py         # Code generation
-│   ├── benchmarker.py            # Performance estimation
-│   └── cli.py                    # CLI interface
+│   ├── config.py               # Hardware targets and settings
+│   ├── llm.py                  # Claude / Ollama provider layer
+│   ├── model_analyzer.py       # Model analysis step
+│   ├── optimization_agent.py   # Optimization planning step
+│   ├── code_generator.py       # Code generation step
+│   ├── benchmarker.py          # Rule-based performance estimator
+│   └── cli.py                  # Click CLI
+├── client/                     # React + TypeScript + Vite web UI
 ├── examples/
 │   ├── model_info_example.json
 │   └── deployment_guide.md
-├── models/                       # Model storage
-├── docs/                         # Documentation
-├── main.py                       # Entry point
-├── requirements.txt              # Dependencies
-├── setup.py                      # Package config
-└── README.md                     # This file
+├── main.py                     # CLI entry point
+├── server.py                   # Flask REST API
+├── Dockerfile                  # Backend image
+├── docker-compose.yml          # Backend + UI
+├── requirements.txt
+└── setup.py
 ```
 
 ## 🤖 Technology Stack
 
-- **AI Engine:** Claude API (Anthropic)
-- **ML Frameworks:** TensorFlow, PyTorch, ONNX
-- **Language:** Python 3.8+
-- **CLI:** Click framework
-- **Code Generation:** LLVM, Clang
+- **LLM:** Claude API (Anthropic) or Ollama (local or Ollama Cloud)
+- **Backend:** Python 3.10+, Flask, Click
+- **Frontend:** React 18, TypeScript, Vite, Tailwind CSS
+- **Deployment:** Docker, Docker Compose
+- **Generated code targets:** TensorFlow Lite Micro, ESP-NN, CMSIS-NN
 
-## 📈 Example Output
+## ⚠️ Current Limitations
 
-```
-═══════════════════════════════════════════════
-        EDGEINFER DEPLOYMENT ANALYSIS
-═══════════════════════════════════════════════
+EdgeInfer is a working prototype. Please keep in mind:
 
-📊 MODEL ANALYSIS:
-   Model: MobileNetV2
-   Parameters: 3.5M
-   Layers: 154
+- **Model files are not parsed yet.** The CLI and UI use example architecture values (3.5M parameters, 154 layers, 224×224×3 input). The UI uses the uploaded file's real name and size.
+- **Performance numbers are estimates.** The benchmark uses fixed rules of thumb per technique (for example, quantization ≈ 4× smaller). It is not measured on hardware.
+- **LLM output should be reviewed.** Analyses, plans and generated code come from a language model and need checking before production use.
+- **Not hardened for public hosting.** The API has no authentication or rate limiting, so anyone who can reach it can spend your API credits.
 
-🎯 TARGET: ESP32
-   RAM: 520 KB
-   Flash: 4 MB
+## 🔮 Roadmap
 
-📈 ORIGINAL:
-   Size: 14.2 MB
-   Latency: 2.3s
-   Power: 180 mW
-
-✨ OPTIMIZED:
-   Size: 1.8 MB (87% reduction)
-   Latency: 280 ms (8.2x faster)
-   Power: 50 mW (3.6x efficient)
-
-✅ DEPLOYMENT: READY
-```
-
-## 🎯 Use Cases
-
-- 🎥 Computer vision on embedded cameras
-- 🎤 Voice recognition on microphones
-- 🏥 Health monitoring on wearables
-- 🤖 Autonomous navigation
-- 🏭 Predictive maintenance
-- 📱 Smart IoT devices
+- [ ] Parse `.tflite` and `.onnx` files for real parameter counts, layers and shapes
+- [ ] Device-aware latency estimates based on clock speed and model FLOPs
+- [ ] Automated tests and CI
+- [ ] Render Markdown output in the UI
+- [ ] Follow-up questions in the web UI
+- [ ] Authentication and rate limiting for hosted deployments
+- [ ] Real hardware testing
 
 ## 📚 Documentation
 
-- [Deployment Guide](examples/deployment_guide.md)
+- [Deployment Guide](DEPLOYMENT.md)
+- [Model Deployment Walkthrough](examples/deployment_guide.md)
 - [Model Information Example](examples/model_info_example.json)
-
-## 🔮 Future Enhancements
-
-- [ ] Real hardware testing
-- [ ] Auto hardware selection
-- [ ] Training on edge devices
-- [ ] Model ensemble support
-- [ ] Custom layer support
-- [ ] Performance profiler
+- [Web UI](client/README.md)
+- [Contributing](CONTRIBUTING.md)
 
 ## 📄 License
 
