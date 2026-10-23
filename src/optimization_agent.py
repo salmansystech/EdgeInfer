@@ -1,6 +1,6 @@
-from anthropic import Anthropic
 from typing import Dict, List, Any
 from dataclasses import dataclass
+from src.llm import chat
 
 @dataclass
 class OptimizationStrategy:
@@ -16,8 +16,6 @@ class OptimizationAgent:
     """Agent for model optimization strategies"""
     
     def __init__(self, model_info: Dict, hardware_target: str):
-        self.client = Anthropic()
-        self.model = "claude-opus-4-1-20250805"
         self.model_info = model_info
         self.hardware_target = hardware_target
         self.conversation_history = []
@@ -32,14 +30,7 @@ class OptimizationAgent:
             "content": prompt
         })
         
-        response = self.client.messages.create(
-            model=self.model,
-            max_tokens=2048,
-            system=self._get_system_prompt(),
-            messages=self.conversation_history
-        )
-        
-        strategy = response.content[0].text
+        strategy = chat(self._get_system_prompt(), self.conversation_history)
         self.conversation_history.append({
             "role": "assistant",
             "content": strategy
@@ -60,14 +51,7 @@ class OptimizationAgent:
             "content": f"Please refine the optimization strategy based on this feedback:\n{feedback}"
         })
         
-        response = self.client.messages.create(
-            model=self.model,
-            max_tokens=2048,
-            system=self._get_system_prompt(),
-            messages=self.conversation_history
-        )
-        
-        refined = response.content[0].text
+        refined = chat(self._get_system_prompt(), self.conversation_history)
         self.conversation_history.append({
             "role": "assistant",
             "content": refined

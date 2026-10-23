@@ -1,13 +1,11 @@
-from anthropic import Anthropic
 from typing import Dict, Any
 from pathlib import Path
+from src.llm import chat
 
 class CodeGenerationAgent:
     """Agent for generating optimized embedded code"""
     
     def __init__(self, optimization_plan: str, model_info: Dict, hardware: str):
-        self.client = Anthropic()
-        self.model = "claude-opus-4-1-20250805"
         self.optimization_plan = optimization_plan
         self.model_info = model_info
         self.hardware = hardware
@@ -23,14 +21,7 @@ class CodeGenerationAgent:
             "content": prompt
         })
         
-        response = self.client.messages.create(
-            model=self.model,
-            max_tokens=4096,
-            system=self._get_system_prompt(),
-            messages=self.conversation_history
-        )
-        
-        code = response.content[0].text
+        code = chat(self._get_system_prompt(), self.conversation_history)
         self.conversation_history.append({
             "role": "assistant",
             "content": code
@@ -59,14 +50,7 @@ Include:
             "content": prompt
         })
         
-        response = self.client.messages.create(
-            model=self.model,
-            max_tokens=2048,
-            system=self._get_system_prompt(),
-            messages=self.conversation_history
-        )
-        
-        example = response.content[0].text
+        example = chat(self._get_system_prompt(), self.conversation_history)
         self.conversation_history.append({
             "role": "assistant",
             "content": example

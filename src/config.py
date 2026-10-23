@@ -7,7 +7,8 @@ load_dotenv()
 class Config:
     """EdgeInfer Configuration"""
     API_KEY = os.getenv("ANTHROPIC_API_KEY")
-    MODEL = os.getenv("MODEL", "claude-opus-4-1-20250805")
+    MODEL = os.getenv("MODEL", "claude-opus-5-5")
+    EFFORT = os.getenv("EFFORT", "medium")  # low | medium | high | xhigh | max
     
     # Supported model formats
     SUPPORTED_FORMATS = ["pb", "tflite", "onnx", "pt", "pth", "h5"]

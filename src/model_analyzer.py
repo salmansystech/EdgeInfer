@@ -1,7 +1,7 @@
-from anthropic import Anthropic
 from typing import Dict, Any
 from dataclasses import dataclass
 import json
+from src.llm import chat
 
 @dataclass
 class ModelMetrics:
@@ -19,8 +19,6 @@ class ModelAnalysisAgent:
     """Agent for analyzing ML models"""
     
     def __init__(self):
-        self.client = Anthropic()
-        self.model = "claude-opus-4-1-20250805"
         self.conversation_history = []
     
     def analyze_model(self, model_info: Dict[str, Any], target_hardware: str) -> Dict:
@@ -33,14 +31,7 @@ class ModelAnalysisAgent:
             "content": prompt
         })
         
-        response = self.client.messages.create(
-            model=self.model,
-            max_tokens=2048,
-            system=self._get_system_prompt(),
-            messages=self.conversation_history
-        )
-        
-        analysis = response.content[0].text
+        analysis = chat(self._get_system_prompt(), self.conversation_history)
         self.conversation_history.append({
             "role": "assistant",
             "content": analysis
@@ -61,14 +52,7 @@ class ModelAnalysisAgent:
             "content": question
         })
         
-        response = self.client.messages.create(
-            model=self.model,
-            max_tokens=2048,
-            system=self._get_system_prompt(),
-            messages=self.conversation_history
-        )
-        
-        answer = response.content[0].text
+        answer = chat(self._get_system_prompt(), self.conversation_history)
         self.conversation_history.append({
             "role": "assistant",
             "content": answer
