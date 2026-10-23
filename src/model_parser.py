@@ -38,11 +38,12 @@ def format_operators(operators: Dict) -> str:
         return "Unknown"
     return ", ".join(f"{name} x{count}" for name, count in operators.items())
 
-def _summary(total_params: int, operators: Counter, input_shape: List[int],
+def _summary(total_params: int, macs: int, operators: Counter, input_shape: List[int],
              output_shape: List[int], precision: str, framework: str) -> Dict:
     return {
         "framework": framework,
         "total_params": total_params,
+        "macs": macs,
         "layers": sum(operators.values()),
         "operators": dict(operators.most_common()),
         "input_shape": tuple(input_shape),
@@ -68,10 +69,14 @@ def _parse_tflite(data: bytes) -> Dict:
         operators = Counter()
         weight_counts = Counter()
         total_params = 0
+        macs = 0
         for s in range(model.SubgraphsLength()):
             subgraph = model.Subgraphs(s)
             for i in range(subgraph.OperatorsLength()):
-                operators[_tflite_op_name(model, subgraph.Operators(i), op_names)] += 1
+                operator = subgraph.Operators(i)
+                name = _tflite_op_name(model, operator, op_names)
+                operators[name] += 1
+                macs += _tflite_op_macs(subgraph, operator, name)
             for i in range(subgraph.TensorsLength()):
                 tensor = subgraph.Tensors(i)
                 if _tflite_has_data(model, tensor.Buffer()):
@@ -87,8 +92,26 @@ def _parse_tflite(data: bytes) -> Dict:
     except Exception as e:
         raise ModelParseError("Could not read TensorFlow Lite file: it may be corrupted") from e
 
-    return _summary(total_params, operators, input_shape, output_shape,
+    return _summary(total_params, macs, operators, input_shape, output_shape,
                     _main_precision(weight_counts), "TensorFlow Lite")
+
+def _tflite_op_macs(subgraph, operator, name: str) -> int:
+    """Multiply-accumulates for one dense or convolution layer (0 for other layers)"""
+    if name not in ("FULLY_CONNECTED", "CONV_2D", "DEPTHWISE_CONV_2D") or operator.InputsLength() < 2 or operator.OutputsLength() < 1:
+        return 0
+    weights = _tflite_shape(subgraph.Tensors(int(operator.Inputs(1))))
+    outputs = _element_count(_tflite_shape(subgraph.Tensors(int(operator.Outputs(0)))))
+    
+    if name == "FULLY_CONNECTED" and len(weights) == 2:
+        # Weights are [units, inputs]: each output value needs one MAC per input
+        return outputs * weights[1]
+    if name == "CONV_2D" and len(weights) == 4:
+        # Filters are [out_channels, height, width, in_channels]
+        return outputs * weights[1] * weights[2] * weights[3]
+    if name == "DEPTHWISE_CONV_2D" and len(weights) == 4:
+        # Filters are [1, height, width, channels]: one input channel per output
+        return outputs * weights[1] * weights[2]
+    return 0
 
 def _tflite_op_name(model, operator, op_names: Dict) -> str:
     code = model.OperatorCodes(operator.OpcodeIndex())
@@ -108,7 +131,8 @@ def _tflite_has_data(model, buffer_index: int) -> bool:
     return buffer.DataLength() > 0 or buffer.Size() > 0
 
 def _tflite_shape(tensor) -> List[int]:
-    return [int(d) for d in tensor.ShapeAsNumpy()] if tensor.ShapeLength() else []
+    # Dynamic dimensions (e.g. batch size) are stored as -1
+    return [max(int(d), 1) for d in tensor.ShapeAsNumpy()] if tensor.ShapeLength() else []
 
 def _parse_onnx(data: bytes) -> Dict:
     import onnx
@@ -136,8 +160,44 @@ def _parse_onnx(data: bytes) -> Dict:
     input_shape = _onnx_shape(inputs[0]) if inputs else []
     output_shape = _onnx_shape(graph.output[0]) if graph.output else []
 
-    return _summary(sum(weight_counts.values()), operators, input_shape, output_shape,
+    return _summary(sum(weight_counts.values()), _onnx_macs(model), operators, input_shape, output_shape,
                     _main_precision(weight_counts), "ONNX")
+
+def _onnx_macs(model) -> int:
+    """Multiply-accumulates for the model's dense, matrix multiply and convolution layers"""
+    import onnx
+    
+    try:
+        graph = onnx.shape_inference.infer_shapes(model).graph
+    except Exception:
+        # Shape inference can fail on unusual models; fall back to declared shapes
+        graph = model.graph
+    
+    shapes = {initializer.name: list(initializer.dims) for initializer in graph.initializer}
+    for value in list(graph.input) + list(graph.value_info) + list(graph.output):
+        if value.type.tensor_type.HasField("shape"):
+            # Treat dynamic dimensions (e.g. batch size) as 1
+            shapes[value.name] = [max(d, 1) for d in _onnx_shape(value)]
+    
+    total = 0
+    for node in graph.node:
+        if node.op_type not in ("Conv", "Gemm", "MatMul") or len(node.input) < 2:
+            continue
+        a = shapes.get(node.input[0])
+        b = shapes.get(node.input[1])
+        output = shapes.get(node.output[0])
+        if not a or not b or not output:
+            continue
+        
+        if node.op_type == "Conv" and len(b) >= 3:
+            # Weights are [out_channels, in_channels / groups, kernel...]
+            total += _element_count(output) * _element_count(b[1:])
+        elif node.op_type == "Gemm":
+            trans_a = any(attr.name == "transA" and attr.i for attr in node.attribute)
+            total += _element_count(output) * (a[0] if trans_a else a[-1])
+        elif node.op_type == "MatMul":
+            total += _element_count(output) * a[-1]
+    return total
 
 def _onnx_shape(value) -> List[int]:
     """Tensor shape, with -1 for dimensions that are dynamic (e.g. batch size)"""

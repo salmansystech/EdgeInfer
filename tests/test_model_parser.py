@@ -24,6 +24,7 @@ def test_tflite_float_model():
 
     # Three dense layers: 1->16, 16->16, 16->1 (weights + biases)
     assert info["total_params"] == (16 + 16) + (256 + 16) + (16 + 1)
+    assert info["macs"] == 16 + 256 + 16
     assert info["layers"] == 3
     assert info["operators"] == {"FULLY_CONNECTED": 3}
     assert info["input_shape"] == (1, 1)
@@ -47,6 +48,8 @@ def test_onnx_model():
     info = parse_model(make_onnx_cnn(), "detector.onnx")
 
     assert info["total_params"] == 8 * 3 * 3 * 3 + 8
+    # Each of the 8 x 30 x 30 outputs needs 3 x 3 x 3 MACs
+    assert info["macs"] == 8 * 30 * 30 * 27
     assert info["layers"] == 2
     assert info["operators"] == {"Conv": 1, "Relu": 1}
     assert info["input_shape"] == (-1, 3, 32, 32)
@@ -79,3 +82,34 @@ def test_invalid_onnx(data):
 def test_format_operators():
     assert format_operators({"CONV_2D": 12, "RELU": 3}) == "CONV_2D x12, RELU x3"
     assert format_operators({}) == "Unknown"
+
+def test_onnx_macs_follow_inferred_shapes():
+    """Shapes between layers are inferred, so a dense layer after Flatten is counted too"""
+    weights = numpy_helper.from_array(np.zeros((8, 3, 3, 3), np.float32), "W")
+    dense = numpy_helper.from_array(np.zeros((8 * 30 * 30, 10), np.float32), "D")
+    graph = helper.make_graph(
+        [
+            helper.make_node("Conv", ["x", "W"], ["c"]),
+            helper.make_node("Flatten", ["c"], ["f"]),
+            helper.make_node("MatMul", ["f", "D"], ["y"]),
+        ],
+        "classifier",
+        [helper.make_tensor_value_info("x", TensorProto.FLOAT, [1, 3, 32, 32])],
+        [helper.make_tensor_value_info("y", TensorProto.FLOAT, [1, 10])],
+        [weights, dense],
+    )
+    info = parse_model(helper.make_model(graph).SerializeToString(), "classifier.onnx")
+    
+    assert info["macs"] == 8 * 30 * 30 * 27 + 7200 * 10
+
+def test_onnx_gemm_macs():
+    weights = numpy_helper.from_array(np.zeros((10, 64), np.float32), "W")
+    graph = helper.make_graph(
+        [helper.make_node("Gemm", ["x", "W"], ["y"], transB=1)],
+        "dense",
+        [helper.make_tensor_value_info("x", TensorProto.FLOAT, [1, 64])],
+        [helper.make_tensor_value_info("y", TensorProto.FLOAT, [1, 10])],
+        [weights],
+    )
+    
+    assert parse_model(helper.make_model(graph).SerializeToString(), "dense.onnx")["macs"] == 64 * 10
