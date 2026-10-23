@@ -36,15 +36,22 @@ export const generateCode = async (
 export const benchmarkModel = async (
   modelInfo: ModelInfo,
   hardware: string,
-  techniques: string[]
+  level: 'conservative' | 'balanced' | 'aggressive'
 ): Promise<BenchmarkResult> => {
-  const response = await api.post('/benchmark', { modelInfo, hardware, techniques });
+  const response = await api.post('/benchmark', { modelInfo, hardware, level });
   return response.data;
 };
 
 export const getHardwareTargets = async () => {
   const response = await api.get('/hardware-targets');
   return response.data;
+};
+
+export const getErrorMessage = (error: unknown): string => {
+  if (axios.isAxiosError(error)) {
+    return error.response?.data?.error || error.message;
+  }
+  return error instanceof Error ? error.message : String(error);
 };
 
 export default api;

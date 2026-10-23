@@ -27,6 +27,7 @@ export interface AnalysisResult {
 export interface OptimizationPlan {
   plan: string;
   level: 'conservative' | 'balanced' | 'aggressive';
+  techniques: string[];
   estimatedSizeReduction: number;
   estimatedLatencyImprovement: number;
 }
@@ -38,6 +39,7 @@ export interface BenchmarkResult {
   estimatedLatencyMs: number;
   estimatedPowerMw: number;
   accuracyPreservation: number;
+  memoryAvailable: boolean;
   deploymentReady: boolean;
 }
 

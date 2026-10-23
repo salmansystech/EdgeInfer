@@ -34,11 +34,11 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results, loading
           <p className="text-gray-600 font-semibold mb-2">Model Size</p>
           <div className="flex items-end gap-2">
             <div>
-              <p className="text-3xl font-bold">{results.optimizedSizeMb.toFixed(1)}</p>
+              <p className="text-3xl font-bold">{results.optimizedSizeMb.toFixed(2)}</p>
               <p className="text-sm text-gray-500">MB (optimized)</p>
             </div>
             <div className="text-right">
-              <p className="text-sm text-gray-600">{results.originalSizeMb.toFixed(1)} MB (original)</p>
+              <p className="text-sm text-gray-600">{results.originalSizeMb.toFixed(2)} MB (original)</p>
               <p className="text-lg font-bold text-green-600">{results.sizeReductionPercent.toFixed(1)}% ↓</p>
             </div>
           </div>
