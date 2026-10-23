@@ -35,8 +35,13 @@ class Benchmarker:
         latency_improvement = 1.0
         accuracy_loss = 0.0
         
+        # Models stored as 8-bit integers are already quantized
+        already_quantized = self.model_info.get("precision") in ("INT8", "UINT8")
+        
         for technique in optimization_techniques:
             if "quantization" in technique.lower():
+                if already_quantized:
+                    continue
                 size_reduction *= 0.25
                 latency_improvement *= 0.4
                 accuracy_loss += 0.02

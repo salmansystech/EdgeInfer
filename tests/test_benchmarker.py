@@ -53,3 +53,10 @@ def test_power_includes_device_base_power(model_info):
 
     # ESP32 base power is 80 mW, plus 50 mW per 100 ms of latency
     assert result.estimated_power_mw == pytest.approx(80 + (10 / 100) * 50)
+
+def test_int8_model_is_not_quantized_again(model_info):
+    model_info["precision"] = "INT8"
+    result = Benchmarker(model_info, "esp32").estimate_performance(["quantization"])
+    
+    assert result.size_reduction_percent == pytest.approx(0)
+    assert result.accuracy_preservation == pytest.approx(100)
