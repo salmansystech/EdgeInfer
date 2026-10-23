@@ -3,8 +3,9 @@
 ## Local Development
 
 ### Prerequisites
-- Python 3.8+
+- Python 3.10+
 - Node.js 18+
+- An Anthropic API key
 - npm or yarn
 
 ### Start Backend
@@ -13,7 +14,7 @@
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
-pip install flask flask-cors
+cp .env.example .env  # then set ANTHROPIC_API_KEY
 python server.py
 ```
 
@@ -27,13 +28,16 @@ npm install
 npm run dev
 ```
 
-Frontend runs on `http://localhost:3000`
+Frontend runs on `http://localhost:3000` and proxies `/api` to the backend
 
 ### Docker Compose
 
 ```bash
-docker-compose up
+cp .env.example .env  # then set ANTHROPIC_API_KEY
+docker compose up --build
 ```
+
+The UI is served on `http://localhost:3000` and the API on `http://localhost:5000`.
 
 ## Production Deployment
 
