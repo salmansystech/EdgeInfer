@@ -110,9 +110,10 @@ def generate(model, hardware, optimization, output):
     click.echo(f"✅ Generated Code:\n{code_result['inference_code'][:500]}...\n")
     
     if output:
-        Path(output).mkdir(exist_ok=True)
-        Path(output) / "inference.cpp"
-        click.echo(f"💾 Code saved to: {output}")
+        Path(output).mkdir(parents=True, exist_ok=True)
+        output_file = Path(output) / "inference.md"
+        output_file.write_text(code_result['inference_code'], encoding="utf-8")
+        click.echo(f"💾 Code saved to: {output_file}")
 
 @cli.command()
 @click.option('--model', '-m', type=click.Path(exists=True), required=True, help='Model file')
