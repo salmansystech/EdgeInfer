@@ -10,7 +10,7 @@ Use it from the **command line** or through a **React web UI**, with either **Cl
 
 ### 📦 Model Parsing
 - Reads **TensorFlow Lite** (`.tflite`) and **ONNX** (`.onnx`) files
-- Extracts parameter count, layers, operator types, input/output shapes and weight precision (e.g. FLOAT32 or INT8)
+- Extracts parameter count, compute (multiply-accumulates per inference), layers, operator types, input/output shapes and weight precision (e.g. FLOAT32 or INT8)
 - These real details are passed to every analysis, plan and code generation step
 
 ### 🔍 Model Analysis
@@ -31,7 +31,8 @@ Use it from the **command line** or through a **React web UI**, with either **Cl
 - Memory management, error handling and integration guidance
 
 ### 📊 Performance Estimator
-- Quick, rule-based estimates of optimized size, latency, power and accuracy retention
+- Quick estimates of optimized size, latency, power, energy per inference and accuracy retention
+- Latency is based on the model's compute (MACs) and each device's clock speed and INT8/float throughput, so the same model is estimated faster on a Cortex-M7 than on a Raspberry Pi Pico
 - Checks whether the optimized model fits in the device's Flash
 - Recognizes models that are already INT8-quantized
 - Runs locally with no API call
@@ -117,7 +118,7 @@ Use your own `.tflite` or `.onnx` file, or the [sample models](examples/sample-m
 
 ```
 📦 hello_world_int8 (TensorFlow Lite, 2.6 KB)
-   Parameters: 321 | Layers: 3 | Precision: INT8
+   Parameters: 321 | MACs: 288 | Layers: 3 | Precision: INT8
    Input: (1, 1) | Output: (1, 1)
    Operators: FULLY_CONNECTED x3
 ```
@@ -150,7 +151,7 @@ The UI is served on `http://localhost:3000` and the API on `http://localhost:500
 .tflite / .onnx file
     ↓
 Model Parser                  (no LLM)
-└─ Parameters, layers, operators, shapes, precision
+└─ Parameters, MACs, layers, operators, shapes, precision
     ↓
 Model details + target device + optimization level
     ↓
@@ -169,8 +170,8 @@ Step 3: Code Generation       (LLM, uses the plan from step 2)
 ├─ Hardware-specific optimizations
 └─ Integration and deployment notes
 
-Performance Estimator         (rule-based, no LLM)
-└─ Size, latency, power and fit-in-Flash estimates
+Performance Estimator         (no LLM)
+└─ Size, latency (MACs ÷ device throughput), power, energy and fit-in-Flash estimates
 ```
 
 All LLM calls go through [`src/llm.py`](src/llm.py), so switching between Claude and Ollama is a single setting.
@@ -184,7 +185,7 @@ All LLM calls go through [`src/llm.py`](src/llm.py), so switching between Claude
 | POST | `/api/analyze` | Model analysis |
 | POST | `/api/optimize` | Optimization plan plus estimated size reduction and speed-up |
 | POST | `/api/generate-code` | Inference code based on an optimization plan |
-| POST | `/api/benchmark` | Rule-based performance estimate |
+| POST | `/api/benchmark` | Performance estimate (size, latency, power, energy) |
 
 ## 📁 Project Structure
 
@@ -197,7 +198,7 @@ EdgeInfer/
 │   ├── model_analyzer.py       # Model analysis step
 │   ├── optimization_agent.py   # Optimization planning step
 │   ├── code_generator.py       # Code generation step
-│   ├── benchmarker.py          # Rule-based performance estimator
+│   ├── benchmarker.py          # Performance estimator
 │   └── cli.py                  # Click CLI
 ├── client/                     # React + TypeScript + Vite web UI
 ├── examples/
@@ -236,13 +237,14 @@ The tests cover the model parser, the performance estimator, the Claude and Olla
 EdgeInfer is a working prototype. Please keep in mind:
 
 - **Only `.tflite` and `.onnx` are supported.** Convert TensorFlow/Keras or PyTorch models to one of these formats first.
-- **Performance numbers are estimates.** The benchmark uses fixed rules of thumb per technique (for example, quantization ≈ 4× smaller). It is not measured on hardware.
+- **Performance numbers are estimates.** Latency uses rough per-device throughput figures (in `src/config.py`) and counts only dense, convolution and matrix-multiply layers. Size and accuracy changes use fixed rules of thumb per technique (for example, quantization ≈ 4× smaller). Nothing is measured on hardware, and RAM usage (the tensor arena) is not yet checked.
 - **LLM output should be reviewed.** Analyses, plans and generated code come from a language model and need checking before production use.
 - **Not hardened for public hosting.** The API has no authentication or rate limiting, so anyone who can reach it can spend your API credits.
 
 ## 🔮 Roadmap
 
-- [ ] Device-aware latency estimates based on clock speed and model FLOPs
+- [ ] Peak RAM (tensor arena) estimate and RAM fit check
+- [ ] Calibrate device throughput against real hardware measurements
 - [ ] Render Markdown output in the UI
 - [ ] Follow-up questions in the web UI
 - [ ] Authentication and rate limiting for hosted deployments
