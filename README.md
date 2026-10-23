@@ -181,6 +181,7 @@ EdgeInfer/
 ├── examples/
 │   ├── model_info_example.json
 │   └── deployment_guide.md
+├── tests/                      # pytest suite
 ├── main.py                     # CLI entry point
 ├── server.py                   # Flask REST API
 ├── Dockerfile                  # Backend image
@@ -197,6 +198,15 @@ EdgeInfer/
 - **Deployment:** Docker, Docker Compose
 - **Generated code targets:** TensorFlow Lite Micro, ESP-NN, CMSIS-NN
 
+## 🧪 Running Tests
+
+```bash
+pip install -r requirements-dev.txt
+python -m pytest
+```
+
+The tests cover the performance estimator, the Claude and Ollama provider layer, and every API endpoint. LLM calls are mocked, so no API key or network access is needed.
+
 ## ⚠️ Current Limitations
 
 EdgeInfer is a working prototype. Please keep in mind:
@@ -210,7 +220,7 @@ EdgeInfer is a working prototype. Please keep in mind:
 
 - [ ] Parse `.tflite` and `.onnx` files for real parameter counts, layers and shapes
 - [ ] Device-aware latency estimates based on clock speed and model FLOPs
-- [ ] Automated tests and CI
+- [ ] Continuous integration (run tests on every push)
 - [ ] Render Markdown output in the UI
 - [ ] Follow-up questions in the web UI
 - [ ] Authentication and rate limiting for hosted deployments
@@ -222,11 +232,12 @@ EdgeInfer is a working prototype. Please keep in mind:
 - [Model Deployment Walkthrough](examples/deployment_guide.md)
 - [Model Information Example](examples/model_info_example.json)
 - [Web UI](client/README.md)
-- [Contributing](CONTRIBUTING.md)
 
 ## 📄 License
 
 MIT License - See LICENSE file
+
+This is a personal portfolio project and is not accepting outside contributions.
 
 ## 👨‍💻 Author
 

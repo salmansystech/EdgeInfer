@@ -99,10 +99,6 @@ The easiest way is Docker Compose from the project root, which runs the backend 
 docker compose up --build
 ```
 
-## Contributing
-
-Follow the existing code style and component patterns.
-
 ## License
 
 MIT
