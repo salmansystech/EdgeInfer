@@ -17,6 +17,8 @@ def model_info():
         "type": "Neural Network",
         "framework": "TensorFlow",
         "total_params": 3_500_000,
+        "macs": 300_000_000,
+        "precision": "FLOAT32",
         "layers": 154,
         "size_mb": 14.2,
         "input_shape": (224, 224, 3),

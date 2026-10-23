@@ -18,6 +18,8 @@ class Config:
     OLLAMA_API_KEY = os.getenv("OLLAMA_API_KEY")  # only needed for Ollama Cloud
     
     # Target hardware specifications
+    # *_macs_per_cycle: rough effective multiply-accumulates per CPU cycle with
+    # optimized kernels (CMSIS-NN / ESP-NN), including memory and kernel overhead
     HARDWARE_TARGETS: Dict = {
         "arm_cortex_m4": {
             "name": "ARM Cortex-M4",
@@ -25,7 +27,9 @@ class Config:
             "flash_kb": 1024,
             "cpu_mhz": 168,
             "power_mw": 100,
-            "platform": "STM32L4"
+            "platform": "STM32L4",
+            "int8_macs_per_cycle": 0.3,
+            "float_macs_per_cycle": 0.1
         },
         "arm_cortex_m7": {
             "name": "ARM Cortex-M7",
@@ -33,7 +37,9 @@ class Config:
             "flash_kb": 2048,
             "cpu_mhz": 216,
             "power_mw": 150,
-            "platform": "STM32H7"
+            "platform": "STM32H7",
+            "int8_macs_per_cycle": 0.6,
+            "float_macs_per_cycle": 0.25
         },
         "esp32": {
             "name": "ESP32",
@@ -41,7 +47,9 @@ class Config:
             "flash_kb": 4096,
             "cpu_mhz": 240,
             "power_mw": 80,
-            "platform": "ESP32"
+            "platform": "ESP32",
+            "int8_macs_per_cycle": 0.1,
+            "float_macs_per_cycle": 0.05
         },
         "esp32_s3": {
             "name": "ESP32-S3",
@@ -49,7 +57,9 @@ class Config:
             "flash_kb": 8192,
             "cpu_mhz": 240,
             "power_mw": 90,
-            "platform": "ESP32-S3"
+            "platform": "ESP32-S3",
+            "int8_macs_per_cycle": 0.5,
+            "float_macs_per_cycle": 0.08
         },
         "raspberry_pi_pico": {
             "name": "Raspberry Pi Pico",
@@ -57,7 +67,9 @@ class Config:
             "flash_kb": 2048,
             "cpu_mhz": 125,
             "power_mw": 50,
-            "platform": "RP2040"
+            "platform": "RP2040",
+            "int8_macs_per_cycle": 0.06,
+            "float_macs_per_cycle": 0.01
         },
         "arduino_nano_33": {
             "name": "Arduino Nano 33",
@@ -65,7 +77,9 @@ class Config:
             "flash_kb": 1024,
             "cpu_mhz": 64,
             "power_mw": 40,
-            "platform": "nRF52840"
+            "platform": "nRF52840",
+            "int8_macs_per_cycle": 0.3,
+            "float_macs_per_cycle": 0.1
         },
         "nrf52840": {
             "name": "nRF52840",
@@ -73,7 +87,9 @@ class Config:
             "flash_kb": 1024,
             "cpu_mhz": 64,
             "power_mw": 45,
-            "platform": "nRF52840"
+            "platform": "nRF52840",
+            "int8_macs_per_cycle": 0.3,
+            "float_macs_per_cycle": 0.1
         }
     }
     
