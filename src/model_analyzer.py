@@ -101,6 +101,7 @@ MODEL INFORMATION:
 - Model Size: {model_info.get('size_mb', 0):.2f} MB
 - Framework: {model_info.get('framework', 'Unknown')}
 - Weight Precision: {model_info.get('precision', 'Unknown')}
+- Compute: {model_info.get('macs', 0):,} multiply-accumulates (MACs) per inference
 - Operators: {format_operators(model_info.get('operators', {}))}
 
 TARGET HARDWARE: {hw_specs.get('name', 'Unknown')}

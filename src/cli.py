@@ -18,7 +18,7 @@ def _load_model(path: str) -> dict:
     size_mb = model_info['size_mb']
     size = f"{size_mb:.2f} MB" if size_mb >= 1 else f"{size_mb * 1024:.1f} KB"
     click.echo(f"📦 {model_info['name']} ({model_info['framework']}, {size})")
-    click.echo(f"   Parameters: {model_info['total_params']:,} | Layers: {model_info['layers']} | Precision: {model_info['precision']}")
+    click.echo(f"   Parameters: {model_info['total_params']:,} | MACs: {model_info['macs']:,} | Layers: {model_info['layers']} | Precision: {model_info['precision']}")
     click.echo(f"   Input: {model_info['input_shape']} | Output: {model_info['output_shape']}")
     click.echo(f"   Operators: {format_operators(model_info['operators'])}\n")
     return model_info
@@ -129,8 +129,8 @@ def benchmark(model, hardware, optimization):
     click.echo(f"📊 Original Size: {result.original_size_mb:.2f} MB")
     click.echo(f"✨ Optimized Size: {result.optimized_size_mb:.2f} MB")
     click.echo(f"📉 Size Reduction: {result.size_reduction_percent:.1f}%")
-    click.echo(f"⚡ Latency: {result.estimated_latency_ms:.1f} ms")
-    click.echo(f"🔋 Power: {result.estimated_power_mw:.1f} mW")
+    click.echo(f"⚡ Latency: {result.estimated_latency_ms:.2f} ms")
+    click.echo(f"🔋 Power: {result.estimated_power_mw:.1f} mW ({result.energy_per_inference_mj:.3f} mJ per inference)")
     click.echo(f"🎯 Accuracy Preservation: {result.accuracy_preservation:.1f}%")
     click.echo(f"✅ Memory Available: {'Yes' if result.memory_available else 'No'}")
     click.echo(f"🚀 Deployment Ready: {'Yes' if result.deployment_ready else 'No'}")

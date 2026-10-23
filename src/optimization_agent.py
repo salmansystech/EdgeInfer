@@ -97,6 +97,7 @@ MODEL:
 - Parameters: {self.model_info.get('total_params', 0):,}
 - Layers: {self.model_info.get('layers', 0)}
 - Weight Precision: {self.model_info.get('precision', 'Unknown')}
+- Compute: {self.model_info.get('macs', 0):,} multiply-accumulates (MACs) per inference
 - Operators: {format_operators(self.model_info.get('operators', {}))}
 
 TARGET DEVICE: {hw_specs.get('name', 'Unknown')}

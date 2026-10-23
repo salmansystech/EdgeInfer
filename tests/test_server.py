@@ -9,6 +9,8 @@ MODEL_INFO = {
     "type": "Neural Network",
     "framework": "TensorFlow",
     "totalParams": 3500000,
+    "macs": 300000000,
+    "precision": "FLOAT32",
     "layers": 154,
     "sizeMb": 14.2,
     "inputShape": [224, 224, 3],
@@ -76,7 +78,10 @@ def test_benchmark_by_level(client):
     assert conservative["sizeReductionPercent"] == pytest.approx(0)
     assert not conservative["deploymentReady"]
     assert balanced["optimizedSizeMb"] == pytest.approx(14.2 * 0.25 * 0.75)
-    assert balanced["deploymentReady"]
+    # A MobileNetV2-sized model fits in the ESP32's Flash after optimization but is too slow
+    assert balanced["memoryAvailable"]
+    assert balanced["estimatedLatencyMs"] > 5000
+    assert not balanced["deploymentReady"]
 
 def test_benchmark_with_explicit_techniques(client):
     data = client.post("/api/benchmark", json={
@@ -99,7 +104,11 @@ def test_optimize_returns_plan_and_estimates(client, fake_llm):
     assert data["plan"] == "LLM reply"
     assert data["techniques"] == ["quantization", "pruning", "fusion"]
     assert data["estimatedSizeReduction"] == pytest.approx(81.25)
-    assert data["estimatedLatencyImprovement"] == pytest.approx(1 / (0.4 * 0.85 * 0.9))
+    # Quantization moves to INT8 kernels; pruning and fusion cut a further 15% and 10%
+    esp32 = server.Config.HARDWARE_TARGETS["esp32"]
+    float_cycles = 300_000_000 / esp32["float_macs_per_cycle"] + 154 * 2000
+    int8_cycles = 300_000_000 / esp32["int8_macs_per_cycle"] + 154 * 2000
+    assert data["estimatedLatencyImprovement"] == pytest.approx(float_cycles / (int8_cycles * 0.85 * 0.9))
 
 def test_generate_code_includes_optimization_plan(client, fake_llm):
     response = client.post("/api/generate-code", json={
@@ -130,6 +139,7 @@ def test_parse_model_returns_ui_format(client):
     data = response.get_json()
     assert data["name"] == "hello_world_int8"
     assert data["totalParams"] == 321
+    assert data["macs"] == 288
     assert data["layers"] == 3
     assert data["precision"] == "INT8"
     assert data["inputShape"] == [1, 1]
@@ -160,3 +170,4 @@ def test_parsed_model_details_reach_the_llm(client, fake_llm):
     
     assert "Weight Precision: INT8" in fake_llm[0]
     assert "Operators: FULLY_CONNECTED x3" in fake_llm[0]
+    assert "Compute: 288 multiply-accumulates" in fake_llm[0]
