@@ -6,6 +6,22 @@ from src.optimization_agent import OptimizationAgent
 from src.code_generator import CodeGenerationAgent
 from src.benchmarker import Benchmarker
 from src.config import Config
+from src.model_parser import parse_model_file, format_operators, ModelParseError
+
+def _load_model(path: str) -> dict:
+    """Read the model file and print a short summary"""
+    try:
+        model_info = parse_model_file(path)
+    except ModelParseError as e:
+        raise click.ClickException(str(e))
+    
+    size_mb = model_info['size_mb']
+    size = f"{size_mb:.2f} MB" if size_mb >= 1 else f"{size_mb * 1024:.1f} KB"
+    click.echo(f"📦 {model_info['name']} ({model_info['framework']}, {size})")
+    click.echo(f"   Parameters: {model_info['total_params']:,} | Layers: {model_info['layers']} | Precision: {model_info['precision']}")
+    click.echo(f"   Input: {model_info['input_shape']} | Output: {model_info['output_shape']}")
+    click.echo(f"   Operators: {format_operators(model_info['operators'])}\n")
+    return model_info
 
 @click.group()
 def cli():
@@ -13,25 +29,14 @@ def cli():
     pass
 
 @cli.command()
-@click.option('--model', '-m', type=click.Path(exists=True), required=True, help='Model file (TensorFlow, PyTorch, ONNX)')
+@click.option('--model', '-m', type=click.Path(exists=True), required=True, help='Model file (.tflite or .onnx)')
 @click.option('--hardware', '-hw', default='esp32', type=click.Choice(list(Config.HARDWARE_TARGETS.keys())), help='Target hardware')
 def analyze(model, hardware):
     """Analyze model for edge deployment"""
     
     click.echo(f"\n🔍 Analyzing model for {Config.HARDWARE_TARGETS[hardware]['name']}...\n")
     
-    # Parse model info
-    model_info = {
-        "name": Path(model).stem,
-        "path": model,
-        "type": "Neural Network",
-        "framework": "TensorFlow/PyTorch/ONNX",
-        "total_params": 3_500_000,  # Example
-        "layers": 154,
-        "input_shape": (224, 224, 3),
-        "output_shape": (1000,),
-        "size_mb": 14.2
-    }
+    model_info = _load_model(model)
     
     # Analysis
     analyzer = ModelAnalysisAgent()
@@ -51,7 +56,7 @@ def analyze(model, hardware):
             break
 
 @cli.command()
-@click.option('--model', '-m', type=click.Path(exists=True), required=True, help='Model file')
+@click.option('--model', '-m', type=click.Path(exists=True), required=True, help='Model file (.tflite or .onnx)')
 @click.option('--hardware', '-hw', default='esp32', type=click.Choice(list(Config.HARDWARE_TARGETS.keys())), help='Target hardware')
 @click.option('--level', '-l', default='balanced', type=click.Choice(['conservative', 'balanced', 'aggressive']), help='Optimization level')
 def optimize(model, hardware, level):
@@ -59,14 +64,7 @@ def optimize(model, hardware, level):
     
     click.echo(f"\n⚡ Generating {level} optimization strategy...\n")
     
-    model_info = {
-        "name": Path(model).stem,
-        "type": "Neural Network",
-        "total_params": 3_500_000,
-        "layers": 154,
-        "size_mb": 14.2,
-        "framework": "TensorFlow"
-    }
+    model_info = _load_model(model)
     
     opt_agent = OptimizationAgent(model_info, hardware)
     strategy = opt_agent.generate_optimization_plan(level)
@@ -85,7 +83,7 @@ def optimize(model, hardware, level):
             break
 
 @cli.command()
-@click.option('--model', '-m', type=click.Path(exists=True), required=True, help='Model file')
+@click.option('--model', '-m', type=click.Path(exists=True), required=True, help='Model file (.tflite or .onnx)')
 @click.option('--hardware', '-hw', default='esp32', type=click.Choice(list(Config.HARDWARE_TARGETS.keys())), help='Target hardware')
 @click.option('--optimization', '-o', default='quantization,pruning,fusion', help='Comma-separated optimization techniques')
 @click.option('--output', '-out', type=click.Path(), help='Output directory for generated code')
@@ -94,13 +92,7 @@ def generate(model, hardware, optimization, output):
     
     click.echo(f"\n💻 Generating inference code for {hardware}...\n")
     
-    model_info = {
-        "name": Path(model).stem,
-        "type": "Neural Network",
-        "input_shape": (224, 224, 3),
-        "output_shape": (1000,),
-        "framework": "TensorFlow"
-    }
+    model_info = _load_model(model)
     
     techniques = [t.strip() for t in optimization.split(',')]
     
@@ -116,7 +108,7 @@ def generate(model, hardware, optimization, output):
         click.echo(f"💾 Code saved to: {output_file}")
 
 @cli.command()
-@click.option('--model', '-m', type=click.Path(exists=True), required=True, help='Model file')
+@click.option('--model', '-m', type=click.Path(exists=True), required=True, help='Model file (.tflite or .onnx)')
 @click.option('--hardware', '-hw', default='esp32', type=click.Choice(list(Config.HARDWARE_TARGETS.keys())), help='Target hardware')
 @click.option('--optimization', '-o', default='quantization,pruning', help='Optimization techniques')
 def benchmark(model, hardware, optimization):
@@ -124,11 +116,7 @@ def benchmark(model, hardware, optimization):
     
     click.echo(f"\n📊 Benchmarking model...\n")
     
-    model_info = {
-        "name": Path(model).stem,
-        "size_mb": 14.2,
-        "total_params": 3_500_000
-    }
+    model_info = _load_model(model)
     
     techniques = [t.strip() for t in optimization.split(',')]
     benchmarker = Benchmarker(model_info, hardware)

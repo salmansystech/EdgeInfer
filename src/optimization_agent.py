@@ -1,6 +1,7 @@
 from typing import Dict, List, Any
 from dataclasses import dataclass
 from src.llm import chat
+from src.model_parser import format_operators
 
 @dataclass
 class OptimizationStrategy:
@@ -95,6 +96,8 @@ MODEL:
 - Size: {self.model_info.get('size_mb', 0):.2f} MB
 - Parameters: {self.model_info.get('total_params', 0):,}
 - Layers: {self.model_info.get('layers', 0)}
+- Weight Precision: {self.model_info.get('precision', 'Unknown')}
+- Operators: {format_operators(self.model_info.get('operators', {}))}
 
 TARGET DEVICE: {hw_specs.get('name', 'Unknown')}
 - RAM: {hw_specs.get('ram_kb', 0)} KB available

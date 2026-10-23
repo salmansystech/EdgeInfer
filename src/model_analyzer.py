@@ -2,6 +2,7 @@ from typing import Dict, Any
 from dataclasses import dataclass
 import json
 from src.llm import chat
+from src.model_parser import format_operators
 
 @dataclass
 class ModelMetrics:
@@ -99,6 +100,8 @@ MODEL INFORMATION:
 - Output Shape: {model_info.get('output_shape', 'Unknown')}
 - Model Size: {model_info.get('size_mb', 0):.2f} MB
 - Framework: {model_info.get('framework', 'Unknown')}
+- Weight Precision: {model_info.get('precision', 'Unknown')}
+- Operators: {format_operators(model_info.get('operators', {}))}
 
 TARGET HARDWARE: {hw_specs.get('name', 'Unknown')}
 - RAM: {hw_specs.get('ram_kb', 0)} KB

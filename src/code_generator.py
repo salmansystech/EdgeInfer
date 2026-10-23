@@ -1,6 +1,7 @@
 from typing import Dict, Any
 from pathlib import Path
 from src.llm import chat
+from src.model_parser import format_operators
 
 class CodeGenerationAgent:
     """Agent for generating optimized embedded code"""
@@ -93,6 +94,8 @@ MODEL INFORMATION:
 - Input: {self.model_info.get('input_shape', 'Unknown')}
 - Output: {self.model_info.get('output_shape', 'Unknown')}
 - Framework: {self.model_info.get('framework', 'Unknown')}
+- Weight Precision: {self.model_info.get('precision', 'Unknown')}
+- Operators: {format_operators(self.model_info.get('operators', {}))}
 
 TARGET HARDWARE: {hw_specs.get('name', 'Unknown')}
 - Platform: {hw_specs.get('platform', 'Unknown')}
