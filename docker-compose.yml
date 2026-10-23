@@ -1,27 +1,17 @@
-version: '3.8'
-
 services:
   backend:
     build: .
     ports:
       - "5000:5000"
-    environment:
-      - FLASK_APP=server.py
-      - FLASK_ENV=development
-    volumes:
-      - .:/app
+    env_file:
+      - .env
 
   frontend:
     build: ./client
     ports:
       - "3000:3000"
     environment:
-      - REACT_APP_API_URL=http://localhost:5000/api
+      # The UI calls /api on its own origin; Vite proxies it to the backend container
+      - API_PROXY_TARGET=http://backend:5000
     depends_on:
       - backend
-    volumes:
-      - ./client:/app
-
-volumes:
-  frontend:
-  backend:

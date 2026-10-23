@@ -1,0 +1,9 @@
+venv/
+.venv/
+.env
+.git/
+client/
+__pycache__/
+*.pyc
+models/
+output/
