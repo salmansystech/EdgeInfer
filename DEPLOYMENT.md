@@ -5,7 +5,9 @@
 ### Prerequisites
 - Python 3.10+
 - Node.js 18+
-- An Anthropic API key
+- An Anthropic API key, or an Ollama install / Ollama Cloud key
+
+To use Ollama instead of Claude, set `LLM_PROVIDER=ollama` in `.env` along with `OLLAMA_BASE_URL`, `OLLAMA_MODEL` and (for Ollama Cloud) `OLLAMA_API_KEY`.
 - npm or yarn
 
 ### Start Backend
@@ -14,7 +16,7 @@
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
-cp .env.example .env  # then set ANTHROPIC_API_KEY
+cp .env.example .env  # then set ANTHROPIC_API_KEY or the Ollama settings
 python server.py
 ```
 

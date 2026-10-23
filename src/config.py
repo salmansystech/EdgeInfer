@@ -6,9 +6,16 @@ load_dotenv()
 
 class Config:
     """EdgeInfer Configuration"""
+    # Language model provider: "anthropic" (Claude) or "ollama"
+    LLM_PROVIDER = os.getenv("LLM_PROVIDER", "anthropic").lower()
+    
     API_KEY = os.getenv("ANTHROPIC_API_KEY")
     MODEL = os.getenv("MODEL", "claude-opus-5-5")
     EFFORT = os.getenv("EFFORT", "medium")  # low | medium | high | xhigh | max
+    
+    OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+    OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "gemma4:31b")
+    OLLAMA_API_KEY = os.getenv("OLLAMA_API_KEY")  # only needed for Ollama Cloud
     
     # Supported model formats
     SUPPORTED_FORMATS = ["pb", "tflite", "onnx", "pt", "pth", "h5"]
@@ -97,5 +104,5 @@ class Config:
     
     # Analysis settings
     MAX_MODEL_SIZE = 500_000_000  # 500MB
-    TIMEOUT = 120
+    TIMEOUT = 300  # seconds
     TEMP_DIR = "temp_models"

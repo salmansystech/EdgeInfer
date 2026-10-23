@@ -10,6 +10,7 @@ setup(
     install_requires=[
         "anthropic>=2.2.0,<3",
         "python-dotenv>=1.0.0",
+        "requests>=2.31.0",
         "click>=8.1.7",
         "flask>=3.0.0",
         "flask-cors>=4.0.0",
