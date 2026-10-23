@@ -3,9 +3,10 @@ import { Upload } from 'lucide-react';
 
 interface ModelUploadProps {
   onUpload: (file: File) => void;
+  loading: boolean;
 }
 
-export const ModelUpload: React.FC<ModelUploadProps> = ({ onUpload }) => {
+export const ModelUpload: React.FC<ModelUploadProps> = ({ onUpload, loading }) => {
   const [dragActive, setDragActive] = useState(false);
 
   const handleDrag = (e: React.DragEvent) => {
@@ -25,6 +26,8 @@ export const ModelUpload: React.FC<ModelUploadProps> = ({ onUpload }) => {
     if (e.target.files?.[0]) {
       onUpload(e.target.files[0]);
     }
+    // Allow selecting the same file again
+    e.target.value = '';
   };
 
   return (
@@ -42,12 +45,12 @@ export const ModelUpload: React.FC<ModelUploadProps> = ({ onUpload }) => {
         }`}
       >
         <Upload size={48} className="mx-auto mb-4 text-gray-400" />
-        <p className="text-lg font-semibold mb-2">Drag and drop your model</p>
+        <p className="text-lg font-semibold mb-2">{loading ? 'Reading model...' : 'Drag and drop your model'}</p>
         <p className="text-gray-600 mb-4">or click to select</p>
         <input
           type="file"
           onChange={handleChange}
-          accept=".pb,.tflite,.onnx,.pt,.pth,.h5"
+          accept=".tflite,.onnx"
           className="hidden"
           id="model-input"
         />
@@ -56,7 +59,7 @@ export const ModelUpload: React.FC<ModelUploadProps> = ({ onUpload }) => {
         </label>
       </div>
       <p className="text-sm text-gray-500 mt-4">
-        Supported: .pb, .tflite, .onnx, .pt, .pth, .h5
+        Supported: .tflite (TensorFlow Lite) and .onnx. No model handy? Try the samples in <code>examples/sample-models</code>.
       </p>
     </div>
   );

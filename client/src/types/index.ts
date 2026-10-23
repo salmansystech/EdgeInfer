@@ -7,6 +7,8 @@ export interface ModelInfo {
   sizeMb: number;
   inputShape: number[];
   outputShape: number[];
+  precision: string;
+  operators: Record<string, number>;
 }
 
 export interface HardwareTarget {

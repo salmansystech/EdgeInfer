@@ -6,8 +6,10 @@ import { HardwareSelector } from './components/HardwareSelector';
 import { OptimizationSelector } from './components/OptimizationSelector';
 import { ResultsDisplay } from './components/ResultsDisplay';
 import { AgentOutput } from './components/AgentOutput';
+import { ModelSummary } from './components/ModelSummary';
 import {
   getHardwareTargets,
+  parseModel,
   benchmarkModel,
   analyzeModel,
   generateOptimization,
@@ -28,7 +30,7 @@ export const App: React.FC = () => {
   const [analysis, setAnalysis] = useState<string | null>(null);
   const [plan, setPlan] = useState<OptimizationPlan | null>(null);
   const [code, setCode] = useState<string | null>(null);
-  const [loading, setLoading] = useState({ benchmark: false, analysis: false, plan: false, code: false });
+  const [loading, setLoading] = useState({ parse: false, benchmark: false, analysis: false, plan: false, code: false });
   const [errors, setErrors] = useState<string[]>([]);
 
   useEffect(() => {
@@ -52,21 +54,17 @@ export const App: React.FC = () => {
   const addError = (step: string, error: unknown) =>
     setErrors((prev) => [...prev, `${step} failed: ${getErrorMessage(error)}`]);
 
-  const handleModelUpload = (file: File) => {
-    // Only the file name and size come from the upload; the architecture fields
-    // are example values until model file parsing is implemented
-    const newModelInfo: ModelInfo = {
-      name: file.name.replace(/\.[^/.]+$/, ''),
-      type: 'Neural Network',
-      framework: 'TensorFlow',
-      totalParams: 3500000,
-      layers: 154,
-      sizeMb: file.size / (1024 * 1024),
-      inputShape: [224, 224, 3],
-      outputShape: [1000],
-    };
-    setModelInfo(newModelInfo);
+  const handleModelUpload = async (file: File) => {
+    setModelInfo(null);
     resetResults();
+    setStepLoading('parse', true);
+    try {
+      setModelInfo(await parseModel(file));
+    } catch (error) {
+      addError('Reading the model', error);
+    } finally {
+      setStepLoading('parse', false);
+    }
   };
 
   const handleHardwareSelect = (hardware: string) => {
@@ -82,7 +80,7 @@ export const App: React.FC = () => {
   const handleAnalyze = async () => {
     if (!modelInfo) return;
     resetResults();
-    setLoading({ benchmark: true, analysis: true, plan: true, code: false });
+    setLoading({ parse: false, benchmark: true, analysis: true, plan: true, code: false });
 
     const runBenchmark = benchmarkModel(modelInfo, selectedHardware, optimizationLevel)
       .then(setResults)
@@ -131,10 +129,12 @@ export const App: React.FC = () => {
           )}
 
           {/* Model Upload Section */}
-          <ModelUpload onUpload={handleModelUpload} />
+          <ModelUpload onUpload={handleModelUpload} loading={loading.parse} />
 
           {modelInfo && (
             <>
+              <ModelSummary model={modelInfo} />
+
               {/* Hardware Selection */}
               <HardwareSelector
                 selected={selectedHardware}
@@ -157,9 +157,6 @@ export const App: React.FC = () => {
                 >
                   {loading.analysis || loading.plan ? 'Analyzing...' : 'Analyze & Optimize'}
                 </button>
-                <p className="text-sm text-gray-500 mt-3">
-                  Parameter count and layer count are example values until model file parsing is added.
-                </p>
               </div>
 
               {/* Results */}
