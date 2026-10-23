@@ -8,9 +8,9 @@ interface OptimizationSelectorProps {
 
 export const OptimizationSelector: React.FC<OptimizationSelectorProps> = ({ selected, onSelect }) => {
   const options = [
-    { id: 'conservative', label: 'Conservative', desc: 'Maximum accuracy', color: 'green' },
-    { id: 'balanced', label: 'Balanced', desc: 'Good trade-off', color: 'blue' },
-    { id: 'aggressive', label: 'Aggressive', desc: 'Maximum compression', color: 'red' },
+    { id: 'conservative', label: 'Conservative', desc: 'Maximum accuracy', selectedClass: 'border-green-600 bg-green-50' },
+    { id: 'balanced', label: 'Balanced', desc: 'Good trade-off', selectedClass: 'border-blue-600 bg-blue-50' },
+    { id: 'aggressive', label: 'Aggressive', desc: 'Maximum compression', selectedClass: 'border-red-600 bg-red-50' },
   ] as const;
 
   return (
@@ -22,10 +22,10 @@ export const OptimizationSelector: React.FC<OptimizationSelectorProps> = ({ sele
         {options.map((opt) => (
           <button
             key={opt.id}
-            onClick={() => onSelect(opt.id as any)}
+            onClick={() => onSelect(opt.id)}
             className={`p-4 rounded-lg border-2 transition ${
               selected === opt.id
-                ? `border-${opt.color}-600 bg-${opt.color}-50 shadow-md`
+                ? `${opt.selectedClass} shadow-md`
                 : 'border-gray-200 hover:border-gray-300'
             }`}
           >
