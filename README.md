@@ -53,6 +53,8 @@ Hardware targets are defined in [`src/config.py`](src/config.py) and are easy to
 
 ## 🚀 Quick Start
 
+For full instructions and troubleshooting, see **[Getting Started](docs/GETTING_STARTED.md)**.
+
 ### 1. Install
 
 Requires Python 3.10+ (and Node.js 18+ for the web UI).
@@ -201,6 +203,7 @@ EdgeInfer/
 │   ├── benchmarker.py          # Performance estimator
 │   └── cli.py                  # Click CLI
 ├── client/                     # React + TypeScript + Vite web UI
+├── docs/                       # Getting started, architecture, project overview
 ├── examples/
 │   ├── sample-models/          # Small TFLite models to try
 │   ├── model_info_example.json
@@ -251,6 +254,12 @@ EdgeInfer is a working prototype. Please keep in mind:
 - [ ] Real hardware testing
 
 ## 📚 Documentation
+
+| Document | What's in it |
+|---|---|
+| [Getting Started](docs/GETTING_STARTED.md) | Step-by-step setup with Docker, a local web app or the CLI, plus troubleshooting |
+| [Architecture](docs/ARCHITECTURE.md) | Components, request flow, parser, estimator, LLM layer, API reference and design decisions |
+| [Project Overview](docs/PROJECT_OVERVIEW.md) | The whole project explained as a presentation, with a demo script |
 
 - [Deployment Guide](DEPLOYMENT.md)
 - [Model Deployment Walkthrough](examples/deployment_guide.md)
