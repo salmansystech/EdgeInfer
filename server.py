@@ -7,8 +7,10 @@ from src.model_analyzer import ModelAnalysisAgent
 from src.optimization_agent import OptimizationAgent
 from src.code_generator import CodeGenerationAgent
 from src.benchmarker import Benchmarker
+from src.model_parser import parse_model, ModelParseError
 
 app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = Config.MAX_MODEL_SIZE
 CORS(app)
 
 class BadRequest(ValueError):
@@ -17,6 +19,15 @@ class BadRequest(ValueError):
 @app.errorhandler(BadRequest)
 def handle_bad_request(e):
     return jsonify({'error': str(e)}), 400
+
+@app.errorhandler(ModelParseError)
+def handle_parse_error(e):
+    return jsonify({'error': str(e)}), 400
+
+@app.errorhandler(413)
+def handle_too_large(e):
+    limit_mb = Config.MAX_MODEL_SIZE // (1024 * 1024)
+    return jsonify({'error': f'Model file is too large (limit {limit_mb} MB)'}), 413
 
 @app.errorhandler(LLMError)
 def handle_llm_error(e):
@@ -36,6 +47,23 @@ def _to_model_info(data: dict) -> dict:
         'size_mb': info.get('sizeMb', 0),
         'input_shape': tuple(info.get('inputShape', [])),
         'output_shape': tuple(info.get('outputShape', [])),
+        'precision': info.get('precision', 'Unknown'),
+        'operators': info.get('operators', {}),
+    }
+
+def _to_ui_model_info(info: dict) -> dict:
+    """Convert parsed model info into the UI's camelCase format"""
+    return {
+        'name': info['name'],
+        'type': info['type'],
+        'framework': info['framework'],
+        'totalParams': info['total_params'],
+        'layers': info['layers'],
+        'sizeMb': info['size_mb'],
+        'inputShape': list(info['input_shape']),
+        'outputShape': list(info['output_shape']),
+        'precision': info['precision'],
+        'operators': info['operators'],
     }
 
 def _get_hardware(data: dict) -> str:
@@ -82,6 +110,15 @@ def get_hardware_targets():
             'powerMw': specs['power_mw'],
         }
     return jsonify(targets)
+
+@app.route('/api/parse-model', methods=['POST'])
+def parse_model_file():
+    """Read architecture details from an uploaded .tflite or .onnx file"""
+    upload = request.files.get('file')
+    if upload is None or not upload.filename:
+        raise BadRequest('A model file is required')
+    
+    return jsonify(_to_ui_model_info(parse_model(upload.read(), upload.filename)))
 
 @app.route('/api/analyze', methods=['POST'])
 def analyze_model():

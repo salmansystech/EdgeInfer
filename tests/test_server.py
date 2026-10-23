@@ -1,3 +1,5 @@
+import io
+from pathlib import Path
 import pytest
 import server
 from src.llm import LLMError
@@ -12,6 +14,8 @@ MODEL_INFO = {
     "inputShape": [224, 224, 3],
     "outputShape": [1000],
 }
+
+SAMPLE_MODEL = Path(__file__).parent.parent / "examples" / "sample-models" / "hello_world_int8.tflite"
 
 ENDPOINTS = ["/api/analyze", "/api/optimize", "/api/generate-code", "/api/benchmark"]
 
@@ -114,3 +118,45 @@ def test_llm_failure_returns_502(client, monkeypatch):
 
     assert response.status_code == 502
     assert response.get_json() == {"error": "Invalid or missing OLLAMA_API_KEY"}
+
+def _upload(client, data, filename):
+    return client.post("/api/parse-model", data={"file": (io.BytesIO(data), filename)},
+                       content_type="multipart/form-data")
+
+def test_parse_model_returns_ui_format(client):
+    response = _upload(client, SAMPLE_MODEL.read_bytes(), "hello_world_int8.tflite")
+    
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["name"] == "hello_world_int8"
+    assert data["totalParams"] == 321
+    assert data["layers"] == 3
+    assert data["precision"] == "INT8"
+    assert data["inputShape"] == [1, 1]
+    assert data["operators"] == {"FULLY_CONNECTED": 3}
+
+def test_parse_model_requires_a_file(client):
+    response = client.post("/api/parse-model", data={}, content_type="multipart/form-data")
+    
+    assert response.status_code == 400
+    assert response.get_json()["error"] == "A model file is required"
+
+def test_parse_model_rejects_unsupported_format(client):
+    response = _upload(client, b"weights", "model.pt")
+    
+    assert response.status_code == 400
+    assert "Unsupported model format" in response.get_json()["error"]
+
+def test_parse_model_rejects_corrupted_file(client):
+    response = _upload(client, b"not a model", "model.tflite")
+    
+    assert response.status_code == 400
+    assert "Not a valid TensorFlow Lite file" in response.get_json()["error"]
+
+def test_parsed_model_details_reach_the_llm(client, fake_llm):
+    model_info = _upload(client, SAMPLE_MODEL.read_bytes(), "hello_world_int8.tflite").get_json()
+    
+    client.post("/api/analyze", json={"modelInfo": model_info, "hardware": "esp32"})
+    
+    assert "Weight Precision: INT8" in fake_llm[0]
+    assert "Operators: FULLY_CONNECTED x3" in fake_llm[0]
